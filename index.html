@@ -1,0 +1,1180 @@
+<title>Generative Loopwork</title>
+<style>
+  /* Layout: a dark working stage the piece sits in, with a quiet panel of
+     controls beside it. Palette taken from the object itself — black and
+     natural cotton, beech ring, the warm grey of a lit wall. */
+  :root{
+    --ground:#efece6; --panel:#ffffff; --line:#d9d3c8;
+    --ink:#231f1b; --dim:#6f675c; --accent:#a9742f; --accent-soft:#f0e3cf;
+    --stage:#4a443c;
+    --display:'Instrument Serif',Georgia,'Times New Roman',serif;
+    --body:'Inter','Helvetica Neue',system-ui,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+    --ground:#1d1a17; --panel:#272320; --line:#3d3730;
+    --ink:#ece6dc; --dim:#9d948a; --accent:#d8b483; --accent-soft:#3a3026;
+    color-scheme: dark;
+  }}
+  :root[data-theme="dark"]{
+    --ground:#1d1a17; --panel:#272320; --line:#3d3730;
+    --ink:#ece6dc; --dim:#9d948a; --accent:#d8b483; --accent-soft:#3a3026;
+    color-scheme: dark;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--ground); color:var(--ink);
+       font:15px/1.55 var(--body); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px; margin:0 auto; padding-block:28px 40px; padding-left:20px; padding-right:20px}
+  header{max-width:62ch}
+  h1{font:400 clamp(30px,5vw,46px)/1.05 var(--display); margin:0 0 10px; text-wrap:balance;
+     letter-spacing:-0.01em}
+  .lede{margin:0 0 6px; color:var(--dim); font-size:15.5px}
+  .lede b{color:var(--ink); font-weight:600}
+  .stageWrap{margin-top:22px; display:grid; grid-template-columns:minmax(0,1fr) 288px; gap:18px}
+  @media (max-width:860px){ .stageWrap{grid-template-columns:1fr} }
+  .stage{position:relative; background:var(--stage); border:1px solid var(--line);
+         border-radius:14px; overflow:hidden; aspect-ratio:1/1.05; min-width:0}
+  @media (max-width:860px){ .stage{aspect-ratio:1/1} }
+  canvas{display:block; width:100%; height:100%}
+  #status{position:absolute; left:12px; bottom:12px; right:12px; font-size:12px;
+    color:#cfc6b8; background:rgba(26,23,20,.72); border:1px solid rgba(255,255,255,.08);
+    border-radius:8px; padding:6px 9px; backdrop-filter:blur(6px);
+    font-variant-numeric:tabular-nums}
+  #bar{position:absolute; left:0; right:0; top:0; height:2px; background:var(--accent);
+       transform-origin:0 50%; transform:scaleX(0)}
+  .panel{display:flex; flex-direction:column; gap:14px; min-width:0}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px}
+  .lbl{font:600 10.5px/1 var(--body); text-transform:uppercase; letter-spacing:.1em;
+       color:var(--dim); margin:0 0 9px}
+  .row{display:flex; gap:7px; flex-wrap:wrap}
+  .row>button{flex:1 1 auto; min-width:0}
+  button{font:inherit; font-size:13px; color:var(--ink); background:transparent;
+    border:1px solid var(--line); border-radius:8px; padding:7px 10px; cursor:pointer;
+    transition:border-color .12s, background .12s}
+  button:hover{border-color:var(--accent)}
+  button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  button[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent)}
+  .piece{text-align:left}
+  .piece b{display:block; font-size:13px; font-weight:600}
+  .piece span{display:block; font-size:11px; color:var(--dim)}
+  .ctl{display:grid; grid-template-columns:1fr auto; gap:3px 8px; align-items:center; margin-bottom:10px}
+  .ctl label{font-size:12px; color:var(--dim)}
+  .ctl output{font-size:12px; font-variant-numeric:tabular-nums}
+  input[type=range]{grid-column:1/-1; width:100%; accent-color:var(--accent); margin:0}
+  table{width:100%; border-collapse:collapse; font-size:12.5px}
+  td{padding:4px 0; border-bottom:1px solid var(--line); color:var(--dim)}
+  td+td{text-align:right; color:var(--ink); font-variant-numeric:tabular-nums}
+  tr:last-child td{border-bottom:0}
+  tr.out td+td{color:var(--accent); font-weight:600}
+  details{margin-top:26px; border-top:1px solid var(--line); padding-top:18px}
+  summary{cursor:pointer; font:600 13px var(--body); color:var(--ink)}
+  details .inner{max-width:68ch; margin-top:12px; color:var(--dim); font-size:14.5px}
+  details h3{font:600 13px var(--body); color:var(--ink); margin:18px 0 6px;
+    text-transform:uppercase; letter-spacing:.08em}
+  details p{margin:0 0 10px}
+  .rules{list-style:none; padding:0; margin:0}
+  .rules li{padding:7px 0; border-bottom:1px solid var(--line); display:grid;
+    grid-template-columns:34px 1fr; gap:10px; align-items:baseline}
+  .rules li:last-child{border-bottom:0}
+  .rules code{font:600 12px var(--body); color:var(--accent); letter-spacing:.04em}
+  @media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap">
+
+<div class="wrap">
+  <header>
+    <h1>Generative Loopwork</h1>
+    <p class="lede">A piece of hand-worked cord was photographed twice. These objects are
+    generated from the rules read off those photographs &#x2014; <b>one act repeated</b>: make a
+    bight in the cord, pass it through an open loop, let the new bight become the open loop.
+    Everything else is a choice of what you pass it through.</p>
+    <p class="lede">Press <b>Handle it</b> and drag the cord to pull a finished piece apart.</p>
+  </header>
+
+  <div class="stageWrap">
+    <div class="stage" id="stage">
+      <div id="bar"></div>
+      <div id="status">loading&#x2026;</div>
+    </div>
+
+    <div class="panel" id="ui">
+      <div class="card">
+        <p class="lbl">Make one</p>
+        <div class="row">
+          <button id="rand">&#x1F3B2; New piece</button>
+          <button id="regen">Regenerate</button>
+        </div>
+        <div class="ctl" style="margin-top:10px"><label>how much work</label><output id="o_max_stitches">600</output>
+          <input type="range" id="max_stitches" min="150" max="1400" step="25" value="600"></div>
+        <div class="ctl"><label>seed</label><output id="o_seed">7</output>
+          <input type="range" id="seed" min="0" max="9999" step="1" value="7"></div>
+        <div class="ctl"><label>L3 &#x2014; what a join passes through</label>
+          <select id="target_policy">
+            <option value="window">window &#x2014; any loop within reach</option>
+            <option value="nearest">nearest &#x2014; whatever is touching</option>
+            <option value="ladder">ladder &#x2014; a fixed count back</option>
+            <option value="random">random &#x2014; any earlier loop</option>
+            <option value="chain">chain &#x2014; never join</option>
+          </select></div>
+        <p id="polidesc"></p>
+        <div class="ctl"><label>join rate</label><output id="o_join_rate">0.34</output>
+          <input type="range" id="join_rate" min="0" max="0.9" step="0.02" value="0.34"></div>
+        <div class="ctl"><label>tension spread (L9)</label><output id="o_tension_var">0.45</output>
+          <input type="range" id="tension_var" min="0" max="0.8" step="0.05" value="0.45"></div>
+        <div class="ctl"><label>ring every N stitches (L4)</label><output id="o_ring_every">130</output>
+          <input type="range" id="ring_every" min="0" max="400" step="10" value="130"></div>
+        <div class="ctl"><label>strand runs out every N (L6)</label><output id="o_strand_runs_out">14</output>
+          <input type="range" id="strand_runs_out" min="0" max="120" step="1" value="14"></div>
+        <div class="ctl"><label>cord diameter (mm)</label><output id="o_cord_mm">8</output>
+          <input type="range" id="cord_mm" min="2" max="60" step="1" value="8"></div>
+        <div class="row" style="margin-top:4px">
+          <button id="replay">&#x21BB; Watch it made</button>
+          <button id="skip">Skip &#x23ED;</button>
+        </div>
+        <div class="ctl" style="margin-top:10px"><label>speed</label><output id="o_speed">3.00x</output>
+          <input type="range" id="speed" min="0.25" max="12" step="0.25" value="3"></div>
+      </div>
+
+      <div class="card">
+        <p class="lbl">View</p>
+        <div class="row">
+          <button id="spin" aria-pressed="true">&#x23F8; Stop spinning</button>
+          <button id="handleBtn" aria-pressed="false">&#x270B; Handle it</button>
+        </div>
+        <div class="row" style="margin-top:7px">
+          <button id="zoomIn">&#xFF0B; Closer</button>
+          <button id="zoomOut">&#xFF0D; Further</button>
+          <button id="zoomFit">&#x2922; Fit</button>
+        </div>
+        <div class="row" style="margin-top:7px">
+          <button id="depthBtn" aria-pressed="true">Depth</button>
+          <button id="fogBtn" aria-pressed="true">Fog</button>
+          <button id="shadowBtn" aria-pressed="true">Shadow</button>
+          <button id="ringsBtn" aria-pressed="true">Rings</button>
+          <button id="wire" aria-pressed="false">Wire</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="lbl">Handling</p>
+        <div class="ctl"><label>grip &#x2014; how much you take hold of</label><output id="o_grip">0.75</output>
+          <input type="range" id="grip" min="0.15" max="2.5" step="0.05" value="0.75"></div>
+        <div class="ctl"><label>give in the cord</label><output id="o_give">1.02</output>
+          <input type="range" id="give" min="1" max="1.3" step="0.01" value="1.02"></div>
+        <div class="ctl"><label>loosen</label><output id="o_loosen">1.0</output>
+          <input type="range" id="loosen" min="0.2" max="6" step="0.1" value="1"></div>
+        <div class="ctl"><label>hang it</label><output id="o_hang">0.0</output>
+          <input type="range" id="hang" min="0" max="3" step="0.1" value="0"></div>
+        <div class="row"><button id="resetPoseBtn">Reset pose</button></div>
+      </div>
+
+      <div class="card">
+        <p class="lbl">This piece</p>
+        <table id="stats"></table>
+      </div>
+    </div>
+  </div>
+
+  <details>
+    <summary>How these are made</summary>
+    <div class="inner">
+      <p>Two photographs of a hand-worked piece were read at magnification. It contains no
+      knots: it is a chain of loops that captures wooden rings by passing through them. Nine
+      rules were derived, and the generator implements exactly those.</p>
+      <ul class="rules">
+        <li><code>L1</code><span>Pass the bight through the loop you just made &#x2014; a chain.</span></li>
+        <li><code>L2</code><span>Two carried strands, alternating every stitch. The two-tone pattern is a consequence, not a design.</span></li>
+        <li><code>L3</code><span>Pass through an <i>older</i> loop and the chain joins itself into a mesh. Which older loop is the one thing the photographs cannot settle.</span></li>
+        <li><code>L4</code><span>Pass through a wooden ring and it is captured for good. This is why rings accumulate.</span></li>
+        <li><code>L5</code><span>The same act at more than one gauge.</span></li>
+        <li><code>L6</code><span>Stop, cut, let the tails hang. The fringe is spent strands, not decoration.</span></li>
+        <li><code>L7</code><span>Three-dimensionality is a consequence. Nothing is shaped; it bunches.</span></li>
+        <li><code>L8</code><span>The act needs an open loop and somewhere to put the bight. When the tip has neither, the work is carried elsewhere, leaving a float.</span></li>
+        <li><code>L9</code><span>The hand works at a tension that drifts. The same cord runs 2.5&#x2013;3&#xD7; tighter in one passage than another.</span></li>
+      </ul>
+      <h3>What is measured and what is chosen</h3>
+      <p>Ring count, stitch count, size and tail count are outputs, not settings. Sizes are
+      real: everything is measured in cord diameters, so an 8 mm cord puts these pieces at
+      roughly 19 cm across. The cord is inextensible &#x2014; pull a binding taut and pulling harder
+      achieves nothing, which is why the piece comes with you instead of stretching.</p>
+      <h3>What this page cannot do</h3>
+      <p>The generator is Python and does not run here, so these four pieces are pre-made.
+      Everything else is live: the build animation plays the configurations the work actually
+      passed through, and the handling runs the generator's own solver with its own constants.</p>
+    </div>
+  </details>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js",
+ "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as GEN from './gen.js';
+
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+const $ = id => document.getElementById(id);
+const status = $('status'), bar = $('bar');
+
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+$('stage').appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x4a443c);   // black cord needs a lit stage
+const camera = new THREE.PerspectiveCamera(42, 1, 0.01, 500);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.autoRotate = true; controls.autoRotateSpeed = 1.0;
+controls.enableZoom = true;        // wheel and trackpad pinch/two-finger scroll
+controls.zoomSpeed = 1.2;
+controls.zoomToCursor = true;      // zoom toward whatever is under the pointer
+scene.add(new THREE.HemisphereLight(0xcfd6e0, 0x2a2420, 1.15));
+const k=new THREE.DirectionalLight(0xfff3e2,2.0); k.position.set(3,4,5);
+k.castShadow=true; k.shadow.mapSize.set(1024,1024); k.shadow.bias=-0.0012;
+const f=new THREE.DirectionalLight(0x9fb4d0,0.8); f.position.set(-4,1,-2);
+const rm=new THREE.DirectionalLight(0xffd9a8,1.1); rm.position.set(0,-3,-5);
+scene.add(k,f,rm);
+
+// Depth of field is OFF by default. It is a camera effect, and a 25 cm object
+// seen whole is entirely within the depth of field of any ordinary lens. The
+// blur does not read as depth here -- it reads as a rendering fault, and at
+// maxblur 0.012 of a 1400 px canvas it is ~17 px, which erases cord that is
+// only a few pixels thick. Left available as a toggle for a shallow, photographic
+// look on a large piece, where it is defensible.
+let dofOn=false, composer=null, bokeh=null;
+let handling=null, handleOn=false, xformTex=null, xformData=null, xformTW=1;
+const xformUniform={value:null}, xformSizeUniform={value:new THREE.Vector3(1,1,1)};
+let restCentre=null, restTangent=null, P=null, V=null, pinned=new Map(), dragging=-1;
+let loosen=1.0, hangG=0.0, calm=0.55;
+/* Cord does not stretch. Springs alone let a pull draw the piece out
+   indefinitely, which is why it felt like elastic rather than cotton. After
+   each step the edge lengths are projected back below `give` x their rest
+   length, so slack is taken up and then the binding holds and the rest of the
+   piece has to come with it. */
+let give=1.02, constraintIters=40;
+let pinMarks=null;   // small markers so you can see what you are holding
+/* The solver only runs when you are actually doing something. This model has
+   no static equilibrium -- measured, it micro-rearranges indefinitely -- so a
+   solver left running makes the piece jiggle on its own, which is motion the
+   object does not have. It wakes on a grab or a slider and sleeps again once
+   it has stopped moving. */
+let wake=0;
+function nudge(frames){ wake=Math.max(wake, frames); }
+/* A hand takes a HANDFUL. Pinning a single stitch only draws one thread out of
+   a tangle; gripping every stitch within a radius and moving them together is
+   what actually pulls the form apart. */
+let grabSet=[], gripR=0.75, gripMark=null;
+/* A hand PULLS, it does not teleport cord. The grabbed handful is drawn toward
+   the cursor by a finite force rather than pinned to it, so when the binding
+   goes taut the grip simply cannot go further and the rest of the piece has to
+   come along -- which is what pulling a real macrame apart does. Hard pins are
+   kept for shift-anchored points, which are your other hand holding still. */
+let goals=new Map(), grabK=0.55;
+/* Inside handling, double-click switches the mouse between pulling the cord and
+   turning the piece. Detected by timing rather than the native dblclick event,
+   because the grab handler calls preventDefault on pointerdown, and that
+   suppresses the compatibility mouse events dblclick is built from. */
+let rotateMode=false, lastDownT=0, lastDownX=0, lastDownY=0;
+function setMouseMode(rot){
+  rotateMode=rot;
+  const b=$('handleBtn');
+  if(b) b.textContent = rot ? '✋ Handle it — turning' : '✋ Handle it — pulling';
+  status.textContent = rot
+    ? 'mouse turns the piece · double-click to go back to pulling the cord'
+    : 'mouse pulls the cord · shift-click to hold a part · double-click to turn instead';
+}
+let targetOf=null, forming=-1;
+let dur=null, cum=null, totalTime=1, carryAt=null;
+
+function makeXform(n){
+  xformTW = Math.max(1, Math.ceil(Math.sqrt(n)));
+  const W = xformTW*2, H = Math.ceil(n/xformTW);
+  xformData = new Float32Array(W*H*4);
+  for(let s=0;s<n;s++) setXform(s, 0,0,0, 0,0,0,1);
+  xformTex = new THREE.DataTexture(xformData, W, H, THREE.RGBAFormat, THREE.FloatType);
+  xformTex.minFilter = xformTex.magFilter = THREE.NearestFilter;
+  xformTex.needsUpdate = true;
+  xformUniform.value = xformTex;
+  xformSizeUniform.value.set(W, H, xformTW);
+}
+function setXform(s, ox,oy,oz, qx,qy,qz,qw){
+  const row=Math.floor(s/xformTW), col=(s-row*xformTW)*2;
+  const W=xformTW*2;
+  let i=(row*W+col)*4;
+  xformData[i]=ox; xformData[i+1]=oy; xformData[i+2]=oz; xformData[i+3]=0;
+  i+=4;
+  xformData[i]=qx; xformData[i+1]=qy; xformData[i+2]=qz; xformData[i+3]=qw;
+}
+
+function buildRhythm(data){
+  /* The hand is not a metronome. Each stitch takes slightly longer or less,
+     and it pauses outright at the things the RULES say are events: threading a
+     ring (L4), joining a new strand when one runs out (L6), and carrying the
+     work to another open loop (L8). The rhythm is read off the rules, not
+     sprinkled on. */
+  const n=nStitch, seed=(data.ruleset.seed|0)||1;
+  const ring=new Set((data.rings||[]).map(r=>r.at));
+  const tail=new Set((data.tails||[]).map(t=>t.at));
+  carryAt=new Set((data.carries||[]).map(c=>c.at));
+  dur=new Float32Array(n); cum=new Float32Array(n+1);
+  for(let i=0;i<n;i++){
+    let x=Math.sin((i+1)*12.9898 + seed*78.233)*43758.5453; x-=Math.floor(x);
+    let d=0.72+0.56*x;                       // the ordinary unevenness of a hand
+    if(carryAt.has(i)) d+=2.2;               // carry the loop across
+    if(ring.has(i))    d+=2.6;               // thread a ring and settle it
+    if(tail.has(i))    d+=3.0;               // cut, join a new strand
+    dur[i]=d; cum[i+1]=cum[i]+d;
+  }
+  totalTime=cum[n]||1;
+}
+// depth of field. Focus tracks the orbit target every frame, so the near cords
+// stay sharp and the far side of the mass softens -- which is the cue that
+// says "this is deep" rather than "this is a flat tangle".
+
+let root=null, spinner=null, wire=false, showRings=true;
+let depth=true, fogOn=true, shadows=true, ground=null, cmPerUnit=1;
+let meshes=[], ringObjs=[], nStitch=0, clock=0, playing=false;
+
+const SIDES = 12;
+let PLY={n:0, depth:0.17, period:0.45};   // the cord's own twist, measured off the source
+function tubeTris(pts, radius, closed){
+  const n=pts.length, P=pts.map(p=>new THREE.Vector3(p[0],p[1],p[2]));
+  const T=[];
+  for(let i=0;i<n;i++){
+    const a=P[(i-1+n)%n], b=P[(i+1)%n];
+    const t=closed? new THREE.Vector3().subVectors(b,a)
+                  : new THREE.Vector3().subVectors(P[Math.min(n-1,i+1)],P[Math.max(0,i-1)]);
+    T.push(t.lengthSq()<1e-12? new THREE.Vector3(0,0,1): t.normalize());
+  }
+  let N=new THREE.Vector3(0,0,1);
+  if(Math.abs(N.dot(T[0]))>0.9) N.set(1,0,0);
+  N.crossVectors(T[0],N).normalize();
+  // arc length, so the ply twists at a fixed rate per length of cord
+  const arc=[0];
+  for(let i=1;i<n;i++) arc.push(arc[i-1]+P[i].distanceTo(P[i-1]));
+  const per=Math.max(1e-6, PLY.period*2*radius);
+  const rings=[];
+  for(let i=0;i<n;i++){
+    N=N.clone().sub(T[i].clone().multiplyScalar(N.dot(T[i]))).normalize();
+    const B=new THREE.Vector3().crossVectors(T[i],N), pos=[], nor=[];
+    const ph=2*Math.PI*arc[i]/per;
+    for(let s=0;s<SIDES;s++){
+      const a=2*Math.PI*s/SIDES;
+      const d=N.clone().multiplyScalar(Math.cos(a)).add(B.clone().multiplyScalar(Math.sin(a)));
+      const lobe = PLY.n ? 1 + PLY.depth*Math.cos(PLY.n*a - ph) : 1;
+      nor.push(d); pos.push(P[i].clone().add(d.clone().multiplyScalar(radius*lobe)));
+    }
+    rings.push({pos,nor});
+  }
+  const out={pos:[],nor:[]};
+  const last = closed? n : n-1;
+  for(let i=0;i<last;i++){
+    const A=rings[i], Bq=rings[(i+1)%n];
+    for(let q=0;q<SIDES;q++){
+      const q2=(q+1)%SIDES;
+      for(const [Rr,ix] of [[A,q],[A,q2],[Bq,q2],[A,q],[Bq,q2],[Bq,q]]){
+        out.pos.push(Rr.pos[ix].x,Rr.pos[ix].y,Rr.pos[ix].z);
+        out.nor.push(Rr.nor[ix].x,Rr.nor[ix].y,Rr.nor[ix].z);
+      }
+    }
+  }
+  return out;
+}
+
+function buildGroup(items, mats, n){
+  /* One merged mesh per colour, triangles ordered by the stitch that made
+     them, plus a lookup from stitch index to vertex count. Revealing the
+     build is then a growing drawRange over the generator's own order. */
+  const byColour={};
+  for(const it of items) (byColour[it.colour] ||= []).push(it);
+  const out=[];
+  for(const [colour, list] of Object.entries(byColour)){
+    list.sort((a,b)=>a.at-b.at);
+    const pos=[],nor=[],col=[],owner=[],rotf=[],marks=[],items=[],sIdx=[],ctr=[];
+    for(const it of list){
+      const t=tubeTris(it.pts, it.radius, it.closed!==false);
+      pos.push(...t.pos); nor.push(...t.nor);
+      // the shade is a MEASUREMENT of how buried this stitch is, baked per
+      // vertex. It is what makes a dense tangle read as a volume.
+      const s=(it.shade===undefined?1:it.shade);
+      const rotatable = (it.closed!==false) ? 1 : 0;
+      const vStart = (pos.length - t.pos.length)/3;
+      const c0=finalCentre[it.at*3], c1=finalCentre[it.at*3+1], c2=finalCentre[it.at*3+2];
+      for(let q=0;q<t.pos.length/3;q++){ col.push(s,s,s); owner.push(it.at); rotf.push(rotatable);
+        sIdx.push(it.at); ctr.push(c0,c1,c2); }
+      items.push({kind:it.kind||'bight', at:it.at, vStart, vEnd:pos.length/3-1,
+                  segs: it.closed!==false ? it.pts.length : it.pts.length-1});
+      marks.push({at:it.at, verts:pos.length/3});
+    }
+    if(!pos.length) continue;
+    const lut=new Int32Array(n+2); let mi=0, run=0;
+    for(let s=0;s<=n;s++){
+      while(mi<marks.length && marks[mi].at<=s){ run=marks[mi].verts; mi++; }
+      lut[s]=run;
+    }
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+    g.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col,3));
+    // every vertex remembers which stitch made it, so the whole bight can be
+    // carried rigidly to wherever that stitch was at a given moment
+    const nv=pos.length/3;
+    g.setAttribute('aStitch', new THREE.Float32BufferAttribute(new Float32Array(sIdx),1));
+    // a hanging end travels with its stitch but does not swing around it
+    g.setAttribute('aRot', new THREE.Float32BufferAttribute(new Float32Array(rotf),1));
+    g.setAttribute('aCentre', new THREE.Float32BufferAttribute(new Float32Array(ctr),3));
+    const c=mats[colour]||[0.8,0.8,0.8];
+    const mesh=new THREE.Mesh(g,new THREE.MeshStandardMaterial({
+      color:new THREE.Color(c[0],c[1],c[2]), roughness:0.97, metalness:0,
+      vertexColors:depth, wireframe:wire, side:THREE.DoubleSide}));
+    // the unfolding is done on the GPU: two keyframe offsets per vertex and a
+    // single mix uniform, so only the keyframe crossings touch CPU memory
+    // One transform per stitch, looked up on the GPU. Re-posing the whole
+    // piece then costs n*8 floats a frame instead of rewriting 900k vertices,
+    // which is what makes handling it interactive at all.
+    mesh.material.onBeforeCompile = sh2 => {
+      sh2.uniforms.uXform = xformUniform;
+      sh2.uniforms.uXformSize = xformSizeUniform;
+      sh2.vertexShader =
+        'attribute float aStitch;\nattribute vec3 aCentre;\nattribute float aRot;\n'
+       +'uniform sampler2D uXform;\nuniform vec3 uXformSize;\n'
+       +'vec3 qrot(vec4 q, vec3 v){ return v + 2.0*cross(q.xyz, cross(q.xyz, v) + q.w*v); }\n'
+       + sh2.vertexShader.replace('#include <begin_vertex>',
+          '#include <begin_vertex>\n'
+         +'  float tw = uXformSize.z;\n'
+         +'  float row = floor(aStitch / tw);\n'
+         +'  float colx = (aStitch - row*tw) * 2.0;\n'
+         +'  vec2 px = vec2((colx+0.5)/uXformSize.x, (row+0.5)/uXformSize.y);\n'
+         +'  vec4 off = texture2D(uXform, px);\n'
+         +'  vec4 qq  = texture2D(uXform, px + vec2(1.0/uXformSize.x, 0.0));\n'
+         +'  vec3 loc = transformed - aCentre;\n'
+         +'  transformed = aCentre + mix(loc, qrot(qq, loc), aRot) + off.xyz;');
+    };
+    mesh.userData.owner = owner;
+    mesh.userData.rotf = rotf;
+    mesh.userData.pristine = Float32Array.from(pos);
+    const span=new Map(), carrySpan=new Map();
+    for(const it of items){
+      if(it.kind==='carry') carrySpan.set(it.at, it);
+      else if(it.kind==='bight') span.set(it.at, [it.vStart, it.vEnd]);
+    }
+    mesh.userData.span = span;
+    mesh.userData.carrySpan = carrySpan;
+    mesh.castShadow=true; mesh.receiveShadow=true;
+    mesh.name=colour; mesh.userData.lut=lut; g.setDrawRange(0,0);
+    out.push(mesh);
+  }
+  return out;
+}
+
+let finalCentre=null, finalTangent=null, offsetCache=new Map();
+
+function tangentsOf(C, n){
+  /* the chain direction at each stitch, from its neighbours */
+  const T=new Float32Array(n*3);
+  for(let i=0;i<n;i++){
+    const a=Math.max(0,i-1), b=Math.min(n-1,i+1);
+    let x=C[b*3]-C[a*3], y=C[b*3+1]-C[a*3+1], z=C[b*3+2]-C[a*3+2];
+    const L=Math.hypot(x,y,z)||1; T[i*3]=x/L; T[i*3+1]=y/L; T[i*3+2]=z/L;
+  }
+  return T;
+}
+
+/* ---------------------------------------------------------------- handling
+   The piece is already made. This moves it the way the generator's own solver
+   would -- same springs, same constants, sent with the object -- so that
+   handling it is not a second, invented physics. It never changes what was
+   generated: Reset restores the made object exactly.                        */
+
+let edgeA=null, edgeB=null, edgeRest=null, mass=null, grid=new Map(), gridAge=0;
+let repelCut=0;
+
+function initHandling(data, n){
+  handling=data.handling;
+  P=new Float32Array(restCentre);            // current pose
+  V=new Float32Array(n*3);
+  pinned=new Map(); dragging=-1;
+  const H=handling, A=[], B=[];
+  for(let i=1;i<n;i++){ A.push(i); B.push(i-1); }
+  for(let i=1;i<n;i++) if(H.joined[i]){ A.push(i); B.push(H.target[i]); }
+  for(const [a,b] of H.carries){ A.push(b); B.push(a); }
+  edgeA=Int32Array.from(A); edgeB=Int32Array.from(B);
+  /* Rest length is the cord that ACTUALLY EXISTS between these two stitches in
+     the made object, not a nominal pitch. A carry float spans a long gap, and
+     calling it one pitch long claimed it was stretched sevenfold before
+     anything was touched -- the constraint then spent itself fighting that
+     instead of holding the binding. This also puts the made object exactly at
+     rest, so it holds its shape until you pull it. */
+  edgeRest=new Float32Array(A.length);
+  for(let e=0;e<A.length;e++){
+    const a=A[e]*3, b=B[e]*3;
+    edgeRest[e]=Math.hypot(restCentre[a]-restCentre[b],
+                           restCentre[a+1]-restCentre[b+1],
+                           restCentre[a+2]-restCentre[b+2]) || H.pitch;
+  }
+  mass=new Float32Array(n).fill(1);
+  for(const r of H.rings) if(r<n) mass[r]=H.ring_weight;
+  /* Volume exclusion while handling must not fire on the made object itself.
+     The generator's cutoff is a loop-length, and the finished piece has plenty
+     of contacts closer than that -- so repulsion pushed, the inextensibility
+     pulled back, and the piece never stopped moving. Set the cutoff just inside
+     the closest contact the made object already has, so the made pose is a true
+     rest and repulsion only speaks when something is genuinely compressed. */
+  {
+    let minD=Infinity;
+    const cell=H.cutoff, g2=new Map();
+    for(let i=0;i<n;i++){
+      const k=(Math.floor(restCentre[i*3]/cell))+','+(Math.floor(restCentre[i*3+1]/cell))
+             +','+(Math.floor(restCentre[i*3+2]/cell));
+      let b=g2.get(k); if(!b){b=[];g2.set(k,b);} b.push(i);
+    }
+    for(const [key,b] of g2){
+      const [gx,gy,gz]=key.split(',').map(Number);
+      for(let dx=0;dx<=1;dx++) for(let dy=-1;dy<=1;dy++) for(let dz=-1;dz<=1;dz++){
+        if(dx===0 && (dy<0 || (dy===0 && dz<0))) continue;
+        const nb=g2.get((gx+dx)+','+(gy+dy)+','+(gz+dz)); if(!nb) continue;
+        for(const i of b) for(const j of nb){
+          if(j<=i || Math.abs(i-j)<2) continue;
+          const D=Math.hypot(restCentre[i*3]-restCentre[j*3],
+                             restCentre[i*3+1]-restCentre[j*3+1],
+                             restCentre[i*3+2]-restCentre[j*3+2]);
+          if(D<minD) minD=D;
+        }
+      }
+    }
+    repelCut = Math.min(H.cutoff, isFinite(minD)? minD*0.95 : H.cutoff);
+  }
+
+  // the generator pins the first stitch on every solver step; without the same
+  // pin the whole piece simply falls, which is not it moving but it leaving
+  pinned.set(0, [restCentre[0], restCentre[1], restCentre[2]]);
+  gridAge=0;
+}
+
+function rebuildGrid(n, cell){
+  grid.clear();
+  for(let i=0;i<n;i++){
+    const k=(Math.floor(P[i*3]/cell))+','+(Math.floor(P[i*3+1]/cell))+','+(Math.floor(P[i*3+2]/cell));
+    let b=grid.get(k); if(!b){ b=[]; grid.set(k,b); } b.push(i);
+  }
+}
+
+function solveStep(n, iters){
+  const H=handling, cut=repelCut||H.cutoff, cut2=cut*cut;
+  for(let it=0; it<iters; it++){
+    const F=new Float32Array(n*3);
+    for(let e=0;e<edgeA.length;e++){
+      const a=edgeA[e]*3, b=edgeB[e]*3;
+      const dx=P[a]-P[b], dy=P[a+1]-P[b+1], dz=P[a+2]-P[b+2];
+      const L=Math.hypot(dx,dy,dz)||1e-9;
+      // TENSION ONLY. Cord resists being stretched and does nothing at all when
+      // slack. A two-sided spring is a strut: it shoves the piece back toward
+      // the shape it was made in, which is why it would not stay where it was
+      // put.
+      if(L<=edgeRest[e]) continue;
+      const f=H.stiff_chain*(L-edgeRest[e])/L;
+      F[a]-=f*dx; F[a+1]-=f*dy; F[a+2]-=f*dz;
+      F[b]+=f*dx; F[b+1]+=f*dy; F[b+2]+=f*dz;
+    }
+    if(gridAge<=0){ rebuildGrid(n, cut); gridAge=6; }
+    gridAge--;
+    for(const [key,b] of grid){
+      const [gx,gy,gz]=key.split(',').map(Number);
+      for(let dx2=0;dx2<=1;dx2++) for(let dy2=-1;dy2<=1;dy2++) for(let dz2=-1;dz2<=1;dz2++){
+        if(dx2===0 && (dy2<0 || (dy2===0 && dz2<0))) continue;
+        const nb=grid.get((gx+dx2)+','+(gy+dy2)+','+(gz+dz2)); if(!nb) continue;
+        for(const i of b) for(const j of nb){
+          if(j<=i) continue;
+          const a3=i*3, b3=j*3;
+          const dx=P[a3]-P[b3], dy=P[a3+1]-P[b3+1], dz=P[a3+2]-P[b3+2];
+          const d2=dx*dx+dy*dy+dz*dz;
+          if(d2>=cut2 || d2<1e-12) continue;
+          const L=Math.sqrt(d2), over=(cut-L)*H.repel*loosen/L;
+          F[a3]+=over*dx; F[a3+1]+=over*dy; F[a3+2]+=over*dz;
+          F[b3]-=over*dx; F[b3+1]-=over*dy; F[b3+2]-=over*dz;
+        }
+      }
+    }
+    for(const [s,g] of goals){
+      const s3=s*3;
+      F[s3]  +=grabK*(g[0]-P[s3]);
+      F[s3+1]+=grabK*(g[1]-P[s3+1]);
+      F[s3+2]+=grabK*(g[2]-P[s3+2]);
+    }
+    const cap=H.max_step*H.pitch;
+    for(let i=0;i<n;i++){
+      const i3=i*3;
+      F[i3+2]-=H.gravity*mass[i]*hangG;
+      for(let k2=0;k2<3;k2++){
+        let v=calm*V[i3+k2]+F[i3+k2];
+        v=Math.max(-cap, Math.min(cap, v));
+        V[i3+k2]=v; P[i3+k2]+=v;
+      }
+    }
+    for(const [s,p] of pinned){
+      P[s*3]=p[0]; P[s*3+1]=p[1]; P[s*3+2]=p[2];
+      V[s*3]=V[s*3+1]=V[s*3+2]=0;
+    }
+
+    // inextensibility: cord may go slack, never stretch
+    for(let k=0;k<constraintIters;k++){
+      for(let e=0;e<edgeA.length;e++){
+        const a=edgeA[e], b=edgeB[e];
+        const wa=pinned.has(a)?0:1, wb=pinned.has(b)?0:1;
+        const ws=wa+wb; if(ws===0) continue;
+        const a3=a*3, b3=b*3;
+        const dx=P[a3]-P[b3], dy=P[a3+1]-P[b3+1], dz=P[a3+2]-P[b3+2];
+        const L=Math.hypot(dx,dy,dz); if(L<1e-9) continue;
+        const maxL=edgeRest[e]*give;
+        if(L<=maxL) continue;
+        const c=(L-maxL)/L;
+        if(wa){ const f=c*(wa/ws); P[a3]-=dx*f; P[a3+1]-=dy*f; P[a3+2]-=dz*f; }
+        if(wb){ const f=c*(wb/ws); P[b3]+=dx*f; P[b3+1]+=dy*f; P[b3+2]+=dz*f; }
+      }
+    }
+  }
+}
+
+const _a=new THREE.Vector3(), _b=new THREE.Vector3(), _qq=new THREE.Quaternion();
+function pushPose(n){
+  /* turn the solved positions into one transform per stitch: where it moved,
+     and the minimal rotation from its rest chain direction to its current one */
+  const T=tangentsOf(P, n);
+  for(let s=0;s<n;s++){
+    const s3=s*3;
+    _a.set(restTangent[s3], restTangent[s3+1], restTangent[s3+2]);
+    _b.set(T[s3], T[s3+1], T[s3+2]);
+    _qq.setFromUnitVectors(_a,_b);
+    setXform(s, P[s3]-restCentre[s3], P[s3+1]-restCentre[s3+1], P[s3+2]-restCentre[s3+2],
+             _qq.x,_qq.y,_qq.z,_qq.w);
+  }
+  xformTex.needsUpdate=true;
+}
+
+function showGrip(x,y,z){
+  if(!spinner) return;
+  if(!gripMark){
+    gripMark=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),
+      new THREE.MeshBasicMaterial({color:0xd8b483, transparent:true, opacity:0.16,
+                                   depthWrite:false}));
+    spinner.add(gripMark);
+  }
+  gripMark.scale.setScalar(gripR);
+  gripMark.position.set(x,y,z); gripMark.visible=true;
+}
+function hideGrip(){ if(gripMark) gripMark.visible=false; }
+
+function syncPinMarks(){
+  if(!spinner) return;
+  if(!pinMarks){
+    pinMarks=new THREE.Group(); spinner.add(pinMarks);
+  }
+  const want=[...pinned.keys()].filter(s=>s!==0);
+  while(pinMarks.children.length<want.length){
+    const m=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),
+      new THREE.MeshBasicMaterial({color:0xd8b483}));
+    m.scale.setScalar(0.09); pinMarks.add(m);
+  }
+  pinMarks.children.forEach((m,i)=>{
+    if(i<want.length){ const s=want[i];
+      m.visible=handleOn; m.position.set(P[s*3],P[s*3+1],P[s*3+2]); }
+    else m.visible=false;
+  });
+}
+
+function resetPose(n){
+  P=new Float32Array(restCentre); V=new Float32Array(n*3);
+  pinned.clear(); goals.clear(); dragging=-1; loosen=1.0; hangG=0.0;
+  pinned.set(0, [restCentre[0], restCentre[1], restCentre[2]]);
+  for(let s=0;s<n;s++) setXform(s,0,0,0,0,0,0,1);
+  xformTex.needsUpdate=true;
+}
+
+
+function assemble(data){
+  if(root){ scene.remove(root); root.traverse(o=>{ if(o.isMesh){o.geometry.dispose(); o.material.dispose();} }); }
+  root=new THREE.Group(); spinner=new THREE.Group();
+  spinner.rotation.x=-Math.PI/2;              // generator is Z-up, three.js is Y-up
+  root.add(spinner); scene.add(root);
+  nStitch=data.stats.stitches;
+  buildRhythm(data);
+  makeXform(nStitch);
+  finalCentre=new Float32Array(nStitch*3);
+  for(const st of data.stitches){
+    let x=0,y=0,z=0;
+    for(const p of st.pts){ x+=p[0]; y+=p[1]; z+=p[2]; }
+    const k=st.pts.length;
+    finalCentre[st.at*3]=x/k; finalCentre[st.at*3+1]=y/k; finalCentre[st.at*3+2]=z/k;
+  }
+  finalTangent=tangentsOf(finalCentre, nStitch);
+  restCentre=finalCentre; restTangent=finalTangent;
+  initHandling(data, nStitch);
+  targetOf=new Int32Array(nStitch);
+  for(const st of data.stitches) targetOf[st.at] = (st.t===undefined? Math.max(0,st.at-1) : st.t);
+
+  const items=[...data.stitches.map(s=>({...s,closed:true,kind:'bight'})),
+               ...(data.carries||[]).map(c=>({...c,closed:false,kind:'carry'})),
+               ...data.tails.map(t=>({...t,closed:false,kind:'tail'}))];
+  meshes=buildGroup(items, data.materials, nStitch);
+  meshes.forEach(m=>spinner.add(m));
+
+  ringObjs=data.rings.map(r=>{
+    const g=new THREE.TorusGeometry(r.r, r.tube, 8, 36);
+    const c=data.materials.wood;
+    const m=new THREE.Mesh(g,new THREE.MeshStandardMaterial({
+      color:new THREE.Color(c[0],c[1],c[2]), roughness:0.62, metalness:0, wireframe:wire}));
+    m.position.set(r.c[0],r.c[1],r.c[2]);
+    m.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),
+      new THREE.Vector3(r.axis[0],r.axis[1],r.axis[2]).normalize());
+    m.name='wood'; m.visible=showRings; m.userData.at=r.at;
+    m.userData.home=m.position.clone(); m.scale.setScalar(0.001);
+    m.userData.restAt=r.at;
+    spinner.add(m); return m;
+  });
+  fit(root);
+}
+
+function markRange(attr, offset, count){
+  // r160 replaced the settable updateRange object with addUpdateRange();
+  // support both so only the changed slice is uploaded, not all 10.8 MB
+  if(attr.addUpdateRange){ attr.clearUpdateRanges(); attr.addUpdateRange(offset, count); }
+  else if(attr.updateRange){ attr.updateRange.offset=offset; attr.updateRange.count=count; }
+  attr.needsUpdate=true;
+}
+
+function restoreStitch(s){
+  if(s<0) return;
+  for(const m of meshes){
+    const r=m.userData.span.get(s); if(!r) continue;
+    const attr=m.geometry.getAttribute('position'), arr=attr.array, pr=m.userData.pristine;
+    const a=r[0]*3, b=(r[1]+1)*3;
+    arr.set(pr.subarray(a,b), a);
+    markRange(attr, a, b-a);
+  }
+}
+
+function formStitch(s, f){
+  /* The unit act, drawn. The new bight starts as a small loop poking through
+     the loop it is being pulled through, and is drawn out to its own place at
+     full size. f=0 is the moment it goes through; f=1 is the finished stitch,
+     which must equal the pristine geometry exactly. */
+  if(s<=0 || s>=nStitch) return;
+  const tgt=targetOf[s];
+  const cx=finalCentre[s*3], cy=finalCentre[s*3+1], cz=finalCentre[s*3+2];
+  const tx=finalCentre[tgt*3], ty=finalCentre[tgt*3+1], tz=finalCentre[tgt*3+2];
+  const e=f*f*(3-2*f);                       // ease, so it is a pull not a jump
+  const ox=tx+(cx-tx)*e, oy=ty+(cy-ty)*e, oz=tz+(cz-tz)*e;
+  const scale=0.12+0.88*e;
+  for(const m of meshes){
+    const r=m.userData.span.get(s); if(!r) continue;
+    const attr=m.geometry.getAttribute('position'), arr=attr.array, pr=m.userData.pristine;
+    for(let v=r[0]; v<=r[1]; v++){
+      const i=v*3;
+      arr[i]  =ox+(pr[i]  -cx)*scale;
+      arr[i+1]=oy+(pr[i+1]-cy)*scale;
+      arr[i+2]=oz+(pr[i+2]-cz)*scale;
+    }
+    markRange(attr, r[0]*3, (r[1]+1)*3 - r[0]*3);
+  }
+}
+
+function drawCarry(s, f){
+  /* The float is laid across rather than appearing: vertices past the frontier
+     are held at the frontier, so the cord travels along its own path. */
+  for(const m of meshes){
+    const it=m.userData.carrySpan.get(s); if(!it) continue;
+    const attr=m.geometry.getAttribute('position'), arr=attr.array, pr=m.userData.pristine;
+    const per=SIDES*6, segs=Math.max(1,it.segs);
+    const front=Math.max(0, Math.min(segs-1, Math.floor(f*segs)));
+    for(let v=it.vStart; v<=it.vEnd; v++){
+      const k=v-it.vStart, seg=Math.floor(k/per), off=k%per;
+      const src=(seg<=front? v : it.vStart+front*per+off)*3;
+      const i=v*3;
+      arr[i]=pr[src]; arr[i+1]=pr[src+1]; arr[i+2]=pr[src+2];
+    }
+    markRange(attr, it.vStart*3, (it.vEnd+1-it.vStart)*3);
+  }
+}
+
+function restoreCarry(s){
+  for(const m of meshes){
+    const it=m.userData.carrySpan.get(s); if(!it) continue;
+    const attr=m.geometry.getAttribute('position'), arr=attr.array, pr=m.userData.pristine;
+    const a=it.vStart*3, b=(it.vEnd+1)*3;
+    arr.set(pr.subarray(a,b), a);
+    markRange(attr, a, b-a);
+  }
+}
+
+function stitchAtTime(x){
+  // uneven stitch durations, so time -> stitch is a lookup not a multiply
+  let lo=0, hi=nStitch;
+  while(lo<hi-1){ const mid=(lo+hi)>>1; if(cum[mid]<=x) lo=mid; else hi=mid; }
+  const i=Math.min(lo, nStitch-1);
+  return [i, Math.min(1, Math.max(0, (x-cum[i])/Math.max(1e-6,dur[i])))];
+}
+
+function setProgress(t){
+  const [cur0, frac0] = cum? stitchAtTime(t*totalTime) : [Math.floor(t*nStitch), 0];
+  const cur = t>=1 ? nStitch : cur0;
+  let frac = t>=1 ? 1 : frac0;
+  // on a carry the work travels first, then the stitch is made
+  let carryF=1, bightF=frac;
+  if(carryAt && carryAt.has(cur)){
+    carryF=Math.min(1, frac/0.55);
+    bightF=Math.max(0, (frac-0.55)/0.45);
+  }
+  for(const m of meshes) m.geometry.setDrawRange(0, m.userData.lut[Math.min(cur,nStitch)]);
+  // one stitch is being made at any moment; everything else is already made
+  if(forming!==cur){ restoreStitch(forming); restoreCarry(forming); forming=cur; }
+  if(cur>0 && cur<nStitch){
+    if(carryAt && carryAt.has(cur)) drawCarry(cur, carryF);
+    formStitch(cur, bightF);
+  } else if(cur>=nStitch){ restoreStitch(forming); restoreCarry(forming); forming=-1; }
+  for(const r of ringObjs){
+    const s=Math.max(0.001, Math.min(1,(cur-r.userData.at)/5));
+    r.scale.setScalar(cur>=r.userData.at? s : 0.001);
+  }
+  bar.style.transform=`scaleX(${t})`;
+  return cur;
+}
+
+let gridHelper=null;
+function makeGround(){
+  if(ground) scene.remove(ground);
+  const g=new THREE.Mesh(new THREE.PlaneGeometry(1,1),
+    new THREE.MeshStandardMaterial({color:0x3b362f, roughness:1, metalness:0}));
+  g.rotation.x=-Math.PI/2; g.receiveShadow=true; scene.add(g); ground=g;
+  return g;
+}
+function makeGrid(cmPerUnit, extent, y){
+  if(gridHelper){ scene.remove(gridHelper); gridHelper.geometry.dispose(); }
+  const tenCm = 10/cmPerUnit;                 // world units per 10 cm
+  const cells = Math.max(4, Math.round(extent/tenCm)*2);
+  gridHelper = new THREE.GridHelper(cells*tenCm, cells, 0x6b6054, 0x544b41);
+  gridHelper.position.y = y + 0.001;
+  gridHelper.material.transparent = true; gridHelper.material.opacity = 0.5;
+  gridHelper.visible = shadows;
+  scene.add(gridHelper);
+}
+
+function fit(obj){
+  obj.position.set(0,0,0); obj.updateMatrixWorld(true);
+  const box=new THREE.Box3().setFromObject(obj);
+  if(box.isEmpty()) return;
+  const size=box.getSize(new THREE.Vector3()), ctr=box.getCenter(new THREE.Vector3());
+  obj.position.copy(ctr).negate();
+  // the work moves while it is being made, so frame the whole excursion, not
+  // just where it ends up -- otherwise early configurations fall out of shot
+  // room to be pulled about once it is being handled
+  const half=Math.max(size.x,size.y,size.z)*0.5;
+  const r=half*1.1;
+  const d=1.35*r/Math.sin(THREE.MathUtils.degToRad(camera.fov*0.5));
+  camera.position.set(d*0.62,d*0.30,d*0.72);
+  camera.near=d/300; camera.far=d*40; camera.updateProjectionMatrix();
+  controls.target.set(0,0,0); controls.update();
+
+  // a floor to sit on and a shadow to sit in: the two cheapest cues that an
+  // object has a size and occupies a place
+  const g=makeGround();
+  g.scale.setScalar(Math.max(size.x,size.z)*16);
+  g.position.y=-r*1.25;
+  g.visible=shadows;
+  makeGrid(cmPerUnit, Math.max(size.x,size.z)*1.6, g.position.y);
+  k.position.set(r*2.6, r*4.0, r*3.2);
+  k.target.position.set(0,0,0); scene.add(k.target);
+  const sc=k.shadow.camera;
+  sc.left=-r*1.6; sc.right=r*1.6; sc.top=r*1.6; sc.bottom=-r*1.6;
+  sc.near=r*0.2; sc.far=r*12; sc.updateProjectionMatrix();
+  // linear fog placed ACROSS the object, not over it: the near face stays
+  // fully lit and only the far side recedes. Exponential fog washed the whole
+  // mass into the background.
+  scene.fog = fogOn ? new THREE.Fog(0x4a443c, d - r*0.85, d + r*2.6) : null;
+  for(const m of meshes) m.material.needsUpdate=true;
+}
+
+
+
+
+let busy=false;
+const NUM=['seed','max_stitches','join_rate','tension_var','ring_every','strand_runs_out','cord_mm'];
+const FLOAT=new Set(['join_rate','tension_var']);
+function syncLabels(){
+  for(const id of NUM){ const v=$(id).value;
+    $('o_'+id).textContent = FLOAT.has(id) ? (+v).toFixed(2) : v; }
+  $('o_speed').textContent=(+$('speed').value).toFixed(2)+'x';
+}
+function params(){
+  const R={...GEN.DEF};
+  for(const id of NUM) R[id]= FLOAT.has(id)? +$(id).value : parseInt($(id).value,10);
+  R.target_policy=$('target_policy').value;
+  return R;
+}
+async function generate(){
+  if(busy) return; busy=true;
+  $('rand').disabled=$('regen').disabled=true;
+  status.textContent='working\u2026';
+  await new Promise(r=>setTimeout(r,16));          // let the label paint
+  try{
+    const t0=performance.now();
+    const data=GEN.build(params());
+    $('polidesc').textContent=data.policies[data.ruleset.target_policy]||'';
+    assemble(data);
+    const s=data.stats;
+    $('stats').innerHTML=`
+      <tr><td>stitches</td><td>${s.stitches}</td></tr>
+      <tr class="out"><td>loops joined</td><td>${s.joins}</td></tr>
+      <tr class="out"><td>rings captured</td><td>${s.rings}</td></tr>
+      <tr><td>cord carried</td><td>${s.carries} times</td></tr>
+      <tr><td>tail ends</td><td>${s.tail_ends}</td></tr>
+      <tr class="out"><td>real size</td><td>${s.size_cm.join(' \u00d7 ')} cm</td></tr>
+      <tr><td>strand length</td><td>${s.strand_m? s.strand_m+' m':'endless'}</td></tr>`;
+    status.textContent=`${s.stitches} stitches \u00b7 ${s.rings} rings \u00b7 `
+      +`${s.size_cm.join('\u00d7')} cm \u00b7 made in ${Math.round(performance.now()-t0)} ms`;
+    clock=0; playing=true; setProgress(0);
+  }catch(e){ status.textContent='generation failed: '+e.message; console.error(e); }
+  finally{ busy=false; $('rand').disabled=$('regen').disabled=false; }
+}
+let POLICIES={};
+$('replay').onclick=()=>{ clock=0; playing=true; };
+$('skip').onclick=()=>{ playing=false; setProgress(1); };
+$('speed').oninput=()=>{ $('o_speed').textContent=(+$('speed').value).toFixed(2)+'x'; };
+$('grip').oninput=()=>{ gripR=+$('grip').value; $('o_grip').textContent=gripR.toFixed(2);
+  if(gripMark) gripMark.scale.setScalar(gripR); };
+$('give').oninput=()=>{ give=+$('give').value; $('o_give').textContent=give.toFixed(2); nudge(240); };
+$('loosen').oninput=()=>{ loosen=+$('loosen').value; $('o_loosen').textContent=loosen.toFixed(1); nudge(300); };
+$('hang').oninput=()=>{ hangG=+$('hang').value; $('o_hang').textContent=hangG.toFixed(1); nudge(600); };
+$('resetPoseBtn').onclick=()=>{ resetPose(nStitch);
+  $('loosen').value=1; loosen=1; $('o_loosen').textContent='1.0';
+  $('hang').value=0; hangG=0; $('o_hang').textContent='0.0'; };
+
+function toggle(id,fn){ const b=$(id);
+  b.onclick=()=>{ const on=b.getAttribute('aria-pressed')!=='true'; b.setAttribute('aria-pressed',on); fn(on); }; }
+toggle('spin',on=>{ controls.autoRotate=on;
+  $('spin').textContent = on ? '⏸ Stop spinning' : '▶ Start spinning'; });
+toggle('wire',on=>{ wire=on; root?.traverse(o=>{ if(o.isMesh) o.material.wireframe=on; }); });
+toggle('ringsBtn',on=>{ showRings=on; root?.traverse(o=>{ if(o.name==='wood') o.visible=on; }); });
+toggle('depthBtn',on=>{ depth=on;
+  for(const m of meshes){ m.material.vertexColors=on; m.material.needsUpdate=true; } });
+toggle('fogBtn',on=>{ fogOn=on; if(root) fit(root); });
+toggle('handleBtn',on=>{ handleOn=on; wake=0;     // enabling must not move it
+  if(on){ setMouseMode(false); }
+  else { $('handleBtn').textContent='✋ Handle it'; rotateMode=false; }
+  if(on){ playing=false; setProgress(1); status.textContent=
+    'shift-click a part to hold it, then drag another part away to unfold · Reset pose restores the made object'; }
+  else { resetPose(nStitch); if(pinMarks) pinMarks.children.forEach(m=>m.visible=false); }
+});
+toggle('shadowBtn',on=>{ shadows=on; renderer.shadowMap.enabled=on;
+  if(ground) ground.visible=on; if(gridHelper) gridHelper.visible=on;
+  for(const m of meshes) m.material.needsUpdate=true; });
+
+/* ---------------- grabbing it ----------------
+   Pick by projecting the stitch centres to the screen, not by raycasting
+   300,000 triangles. Dragging pins the grabbed stitch to the cursor and the
+   solver does the rest; shift leaves it pinned, which is how you hang the
+   piece from a different point and watch it drape. */
+const _p=new THREE.Vector3(), _ray=new THREE.Raycaster(), _plane=new THREE.Plane(),
+      _hit=new THREE.Vector3(), _ndc=new THREE.Vector2();
+let grabWorld=new THREE.Vector3(), shiftHeld=false;
+
+function pickStitch(cx, cy){
+  if(!P||!spinner) return -1;
+  spinner.updateMatrixWorld(true);
+  let best=-1, bestD=70*70;
+  const w=renderer.domElement.clientWidth, hh=renderer.domElement.clientHeight;
+  for(let s=0;s<nStitch;s++){
+    _p.set(P[s*3],P[s*3+1],P[s*3+2]).applyMatrix4(spinner.matrixWorld).project(camera);
+    if(_p.z<-1||_p.z>1) continue;
+    const sx=(_p.x*0.5+0.5)*w, sy=(-_p.y*0.5+0.5)*hh;
+    const d=(sx-cx)*(sx-cx)+(sy-cy)*(sy-cy);
+    if(d<bestD){ bestD=d; best=s; }
+  }
+  return best;
+}
+
+function cursorToLocal(cx, cy, anchorWorld){
+  const el=renderer.domElement;
+  _ndc.set((cx/el.clientWidth)*2-1, -(cy/el.clientHeight)*2+1);
+  _ray.setFromCamera(_ndc, camera);
+  camera.getWorldDirection(_p);
+  _plane.setFromNormalAndCoplanarPoint(_p, anchorWorld);
+  if(!_ray.ray.intersectPlane(_plane, _hit)) return null;
+  return spinner.worldToLocal(_hit.clone());
+}
+
+/* Registered in the CAPTURE phase so it runs before OrbitControls, which was
+   added to the same element first. If the click lands on the cord we take the
+   gesture and stop it propagating, so the camera never starts orbiting; if it
+   lands on empty space we do nothing and the orbit works as usual. No mode to
+   find: dragging the cord of a finished piece just handles it. */
+renderer.domElement.addEventListener('pointerdown', e=>{
+  // Dragging ROTATES unless you have said you are handling the piece. Grabbing
+  // the cord on every drag left no way to turn the object with the mouse.
+  if(!handleOn || playing || !P || e.button!==0) return;
+  const r=renderer.domElement.getBoundingClientRect();
+  const px=e.clientX-r.left, py=e.clientY-r.top, now=performance.now();
+  if(now-lastDownT < 350 && Math.hypot(px-lastDownX, py-lastDownY) < 8){
+    // second click of a double: switch what the mouse does, and undo the grab
+    // the first click may have started
+    setMouseMode(!rotateMode);
+    for(const [i] of grabSet) goals.delete(i);
+    goals.clear(); grabSet=[]; dragging=-1; hideGrip(); controls.enabled=true;
+    lastDownT=0;
+    e.stopPropagation(); e.preventDefault();
+    return;
+  }
+  lastDownT=now; lastDownX=px; lastDownY=py;
+  if(rotateMode) return;                // turning: let the camera have the drag
+  const s=pickStitch(px, py);
+  if(s<0) return;                       // empty space: let the camera have it
+  shiftHeld=e.shiftKey;
+  dragging=s;
+  grabWorld.set(P[s*3],P[s*3+1],P[s*3+2]).applyMatrix4(spinner.matrixWorld);
+  // everything within reach of the grab comes with it, keeping its offset
+  grabSet=[];
+  const r2=gripR*gripR;
+  for(let i=0;i<nStitch;i++){
+    const dx=P[i*3]-P[s*3], dy=P[i*3+1]-P[s*3+1], dz=P[i*3+2]-P[s*3+2];
+    if(dx*dx+dy*dy+dz*dz<=r2) grabSet.push([i,dx,dy,dz]);
+  }
+  goals.clear();
+  for(const [i,dx,dy,dz] of grabSet) goals.set(i,[P[s*3]+dx,P[s*3+1]+dy,P[s*3+2]+dz]);
+  showGrip(P[s*3],P[s*3+1],P[s*3+2]);
+  controls.enabled=false;
+  e.stopPropagation(); e.preventDefault();
+  try{ renderer.domElement.setPointerCapture(e.pointerId); }catch(_){}
+  status.textContent='holding '+grabSet.length+' stitches — drag to pull · shift-click elsewhere to '
+    +'anchor a part, then drag another part away to open it out · Reset pose to restore';
+}, true);
+
+renderer.domElement.addEventListener('pointermove', e=>{
+  if(dragging<0) return;
+  const r=renderer.domElement.getBoundingClientRect();
+  const loc=cursorToLocal(e.clientX-r.left, e.clientY-r.top, grabWorld);
+  if(loc){
+    for(const [i,dx,dy,dz] of grabSet) goals.set(i,[loc.x+dx, loc.y+dy, loc.z+dz]);
+    showGrip(loc.x, loc.y, loc.z);
+  }
+  nudge(40);
+  e.stopPropagation();
+}, true);
+
+const endDrag = e => {
+  if(dragging<0) return;
+  // shift leaves the handful held WHERE IT ENDED UP, not where you asked for
+  if(shiftHeld) for(const [i] of grabSet) pinned.set(i,[P[i*3],P[i*3+1],P[i*3+2]]);
+  goals.clear(); grabSet=[]; hideGrip();
+  // let go and it stays exactly as left: no settle, no spring-back
+  dragging=-1; controls.enabled=true; wake=0;
+  try{ renderer.domElement.releasePointerCapture(e.pointerId); }catch(_){}
+};
+renderer.domElement.addEventListener('pointerup', endDrag, true);
+renderer.domElement.addEventListener('pointercancel', endDrag, true);
+
+/* While handling, a plain drag is holding the cord, so there is nothing left to
+   turn the piece with. Two-finger trackpad movement rotates it instead of
+   zooming; pinch (which arrives as ctrl+wheel) still zooms, and outside
+   handling mode two fingers zoom as before. */
+const _sph=new THREE.Spherical(), _off=new THREE.Vector3();
+renderer.domElement.addEventListener('wheel', e=>{
+  if(!handleOn || rotateMode || e.ctrlKey) return;   // pinch, turning, or not handling: zoom
+  e.preventDefault(); e.stopPropagation();
+  const k=0.005;
+  _off.copy(camera.position).sub(controls.target);
+  _sph.setFromVector3(_off);
+  _sph.theta -= e.deltaX * k;
+  _sph.phi   -= e.deltaY * k;
+  _sph.phi = Math.max(0.02, Math.min(Math.PI-0.02, _sph.phi));
+  camera.position.copy(controls.target).add(_off.setFromSpherical(_sph));
+  controls.update();
+}, {capture:true, passive:false});
+
+/* Zoom: trackpad and wheel go through OrbitControls, and these buttons do the
+   same thing in steps for anyone who would rather press something. */
+function zoomBy(f){
+  const t=controls.target;
+  const v=camera.position.clone().sub(t);
+  const len=v.length()*f;
+  const min=camera.near*4, max=camera.far*0.3;
+  v.setLength(Math.max(min, Math.min(max, len)));
+  camera.position.copy(t).add(v);
+  camera.updateProjectionMatrix(); controls.update();
+}
+$('zoomIn').onclick  = ()=>zoomBy(0.8);
+$('zoomOut').onclick = ()=>zoomBy(1.25);
+$('zoomFit').onclick = ()=>{ if(root) fit(root); };
+
+function resize(){
+  // the canvas lives in a sized box here, not the whole window, and there is no
+  // panel overlapping it — so no view offset
+  const box=document.getElementById('stage');
+  const w=Math.max(1, box.clientWidth), h=Math.max(1, box.clientHeight);
+  renderer.setSize(w,h,false);
+  renderer.domElement.style.width='100%'; renderer.domElement.style.height='100%';
+  camera.aspect=w/h; camera.clearViewOffset(); camera.updateProjectionMatrix();
+}
+addEventListener('resize',resize);
+new ResizeObserver(resize).observe(document.getElementById('stage'));
+resize();
+
+let last=performance.now();
+window.__dbg={scene,renderer,camera,controls,setProgress,fit,
+              set hangG(v){hangG=v}, get hangG(){return hangG},
+              set calm(v){calm=v}, get calm(){return calm},
+              get wake(){return wake}, nudge, get repelCut(){return repelCut},
+              get rotateMode(){return rotateMode}, setMouseMode,
+              set constraintIters(v){constraintIters=v}, get constraintIters(){return constraintIters},
+              set grabK(v){grabK=v}, get grabK(){return grabK},
+              get grabSet(){return grabSet}, get goals(){return goals}, set give(v){give=v}, get give(){return give},
+              get edges(){return {a:edgeA,b:edgeB,rest:edgeRest}}, set gripR(v){gripR=v}, get gripR(){return gripR},
+              set loosen(v){loosen=v}, get loosen(){return loosen},
+              get P(){return P}, get pinned(){return pinned}, get restCentre(){return restCentre},
+              solveStep,pushPose,resetPose,pickStitch, get handleOn(){return handleOn},
+              drawCarry,restoreCarry,formStitch,stitchAtTime,
+              get dur(){return dur}, get cum(){return cum}, get totalTime(){return totalTime},
+              get composer(){return composer}, get bokeh(){return bokeh},
+              get root(){return root}, get meshes(){return meshes},
+              get nStitch(){return nStitch}, get playing(){return playing}};
+renderer.setAnimationLoop(()=>{
+  const now=performance.now(), dt=(now-last)/1000; last=now;
+  if(playing && nStitch){
+    clock += dt*(+$('speed').value)*10;          // average stitches per second
+    const t=Math.min(1, clock/(totalTime||nStitch));
+    setProgress(t);
+    if(t>=1) playing=false;
+  }
+  if(handleOn && handling && P && (wake>0 || dragging>=0)){
+    solveStep(nStitch, 1);   // one step: the constraint pass is the expensive part
+    pushPose(nStitch);
+    syncPinMarks();
+    if(dragging>=0) nudge(40);
+    else {
+      wake--;
+      // sleep as soon as it has actually stopped, not merely run out of frames
+      let vmax=0;
+      for(let i=0;i<V.length;i++){ const a=Math.abs(V[i]); if(a>vmax) vmax=a; }
+      if(vmax < 1e-4) wake=0;
+    }
+    for(const r of ringObjs){
+      const s=r.userData.restAt;
+      r.position.set(r.userData.home.x + (P[s*3]-restCentre[s*3]),
+                     r.userData.home.y + (P[s*3+1]-restCentre[s*3+1]),
+                     r.userData.home.z + (P[s*3+2]-restCentre[s*3+2]));
+    }
+  }
+  controls.update();
+  renderer.render(scene,camera);
+});
+
+syncLabels();
+$('rand').onclick=()=>{ $('seed').value=Math.floor(Math.random()*10000); syncLabels(); generate(); };
+$('regen').onclick=generate;
+for(const id of NUM){ $(id).oninput=syncLabels; $(id).onchange=generate; }
+$('target_policy').onchange=generate;
+generate();
+</script>
