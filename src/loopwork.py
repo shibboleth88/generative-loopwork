@@ -60,6 +60,12 @@ class Ruleset:
                                      # be turned. 0 = the hand may only go
                                      # forward, which stops it early for a
                                      # reason the craft does not have.
+    sprawl: float = 0.0              # chance a stitch ignores the pull toward
+                                     # existing fabric and simply takes the
+                                     # first free site. 0 = always accretes (a
+                                     # mass, like the source); 1 = always
+                                     # travels (a rope). The continuum between
+                                     # is webs and branching forms.
     contact: float = 1.9             # the act happens AT THE EDGE of the work,
                                      # not off in space: of the free sites the
                                      # hand tries, it takes the one most in
@@ -85,8 +91,8 @@ class Ruleset:
     # L4: capture a wooden ring every N stitches (0 = never)
     ring_every: int = 130            # SOURCE-DERIVED: 3 rings on a ~400-stitch
                                      # piece. Was 70, which is twice too often.
-    ring_radius: float = 0.46
-    ring_tube: float = 0.075
+    ring_radius: float = 0.315
+    ring_tube: float = 0.12
     ring_weight: float = 7.0         # rings are heavy; they pull the work down
 
     # L6: a strand runs out every N stitches; joining in a new one leaves
@@ -158,7 +164,7 @@ class Ruleset:
 
 BLACK, NATURAL, HEAVY = "black", "natural", "heavy"
 MATS = {BLACK: (0.085, 0.085, 0.095), NATURAL: (0.93, 0.89, 0.80),
-        HEAVY: (0.76, 0.63, 0.47), "wood": (0.84, 0.72, 0.52)}
+        HEAVY: (0.76, 0.63, 0.47), "wood": (0.98, 0.88, 0.71)}
 
 def norm(v):
     n = np.linalg.norm(v)
@@ -336,7 +342,7 @@ def work(R: Ruleset):
             if not free(pos, exclude={n-1, t}, scale=tens[n]):   # L8: no room
                 continue
 
-            if R.contact <= 0:
+            if R.contact <= 0 or rng.random() < R.sprawl:
                 best = (0, pos, dd, t); break
             # of the sites that are free, prefer the one most in contact with
             # the fabric already made: the work grows on itself, not away

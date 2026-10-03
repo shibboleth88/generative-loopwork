@@ -87,7 +87,9 @@
     generated from the rules read off those photographs &#x2014; <b>one act repeated</b>: make a
     bight in the cord, pass it through an open loop, let the new bight become the open loop.
     Everything else is a choice of what you pass it through.</p>
-    <p class="lede">Press <b>Handle it</b> and drag the cord to pull a finished piece apart.</p>
+    <p class="lede">Press <b>Handle it</b> and drag the cord to pull a finished piece apart.
+    Push <b>sprawl</b> up and the same amount of work stops piling into a mass and
+    starts travelling &#x2014; 800 stitches makes a 24&#xA0;cm lump or a 3&#xA0;m rope.</p>
   </header>
 
   <div class="stageWrap">
@@ -118,6 +120,8 @@
         <p id="polidesc"></p>
         <div class="ctl"><label>join rate</label><output id="o_join_rate">0.34</output>
           <input type="range" id="join_rate" min="0" max="0.9" step="0.02" value="0.34"></div>
+        <div class="ctl"><label>sprawl &#x2014; 0 a mass, 1 a rope</label><output id="o_sprawl">0.00</output>
+          <input type="range" id="sprawl" min="0" max="1" step="0.05" value="0"></div>
         <div class="ctl"><label>tension spread (L9)</label><output id="o_tension_var">0.45</output>
           <input type="range" id="tension_var" min="0" max="0.8" step="0.05" value="0.45"></div>
         <div class="ctl"><label>ring every N stitches (L4)</label><output id="o_ring_every">130</output>
@@ -902,8 +906,8 @@ function fit(obj){
 
 
 let busy=false;
-const NUM=['seed','max_stitches','join_rate','tension_var','ring_every','strand_runs_out','cord_mm'];
-const FLOAT=new Set(['join_rate','tension_var']);
+const NUM=['seed','max_stitches','join_rate','sprawl','tension_var','ring_every','strand_runs_out','cord_mm'];
+const FLOAT=new Set(['join_rate','tension_var','sprawl']);
 function syncLabels(){
   for(const id of NUM){ const v=$(id).value;
     $('o_'+id).textContent = FLOAT.has(id) ? (+v).toFixed(2) : v; }

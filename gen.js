@@ -10,9 +10,9 @@ export const DEF = {
   loop_capacity:3, clearance:0.65, tries:30, probes:40, turn:0.5, contact:1.9,
   strands:'KN', heavy_every:120, heavy_run:14, heavy_scale:2.8,
   target_policy:'window', join_rate:0.34, ladder_period:13, window:26, nearest_radius:1.15,
-  ring_every:130, ring_radius:0.46, ring_tube:0.075, ring_weight:7.0,
+  ring_every:130, ring_radius:0.315, ring_tube:0.12, ring_weight:7.0,
   strand_runs_out:14, tail_stitches:13, tail_jitter:0.5, fringe_density:0.45,
-  tension_var:0.45, tension_run:28,
+  tension_var:0.45, tension_run:28, sprawl:0.0,
   cord_mm:8.0, cord_radius:0.05, loop_a:0.21, loop_b:0.125,
   ply:0, ply_depth:0.17, ply_period:0.45,
   wander:0.75, hand:0.22,
@@ -29,7 +29,7 @@ export const TARGETS = {
   random:  'join to any earlier stitch at all -> long-range tangle',
 };
 const MATS = { black:[0.085,0.085,0.095], natural:[0.93,0.89,0.80],
-               heavy:[0.76,0.63,0.47], wood:[0.84,0.72,0.52] };
+               heavy:[0.76,0.63,0.47], wood:[0.98,0.88,0.71] };
 
 function rng32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0;
   let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t;
@@ -144,7 +144,7 @@ export function work(R){
       const py=(t===n-1)?gy:0.45*gy+0.55*P[t*3+1];
       const pz=(t===n-1)?gz:0.45*gz+0.55*P[t*3+2];
       if(!free(px,py,pz,n-1,t,tens[n])) continue;
-      if(R.contact<=0){ best=[0,px,py,pz,dd,t]; break; }
+      if(R.contact<=0 || rnd()<R.sprawl){ best=[0,px,py,pz,dd,t]; break; }
       const c=contactCount(px,py,pz);
       if(!best || c>best[0]) best=[c,px,py,pz,dd,t];
     }

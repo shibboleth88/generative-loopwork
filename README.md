@@ -30,6 +30,18 @@ Everything else is a choice of what you pass it through.
 | **L8** | the act needs an open loop and somewhere to put the bight; when the tip has neither the work is carried elsewhere, leaving a float |
 | **L9** | the hand works at a tension that drifts — the same cord runs 2.5–3× tighter in one passage than another |
 
+### Making one much bigger
+
+Size is set three ways, and only one of them is brute force:
+
+- **Cord gauge** — linear and free. The same 800 stitches is 22 cm at 8 mm cord
+  and **220 cm at 80 mm rope**. Nothing else changes.
+- **Sprawl** — whether the act must happen against existing fabric. At 0 the
+  work piles into a mass, which is what the source is; at 1 it travels. 800
+  stitches goes from a **21 cm lump to a 3.4 m rope** across that range.
+- **More stitches** — a compact mass grows as the cube root of the work, so nine
+  times the stitches buys 2.2× the size. This is the expensive route.
+
 Ring count, stitch count, size and tail count are **outputs**, not settings.
 Sizes are real: everything is measured in cord diameters, so 8 mm cord puts a
 typical piece around 19 cm across.

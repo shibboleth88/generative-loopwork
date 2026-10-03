@@ -135,6 +135,23 @@ piece)
 | colour as a mount-time period over many cords | strict per-stitch alternation of two strands |
 | slack as the source of 3D form | no bands to be slack; L7 instead |
 
+## Correction: the rings were the wrong colour and the wrong shape
+
+I rendered the rings as mid-tan wood, `(0.84, 0.72, 0.52)`, and as thin hoops.
+Both are wrong, and measurement off photo 2 says so plainly:
+
+| | measured | was | now |
+|---|---|---|---|
+| ring colour | RGB (190, 169, 134), **brighter than the cream cord** at (142, 136, 128) | (0.84, 0.72, 0.52) | **(0.98, 0.88, 0.71)** |
+| outer diameter / cord diameter | **8.7** | 10.7 | 8.7 |
+| tube diameter / cord diameter | **2.4** | 1.5 | 2.4 |
+
+So the real rings are slightly *smaller* than I had them but much *fatter*, and
+near-white rather than brown. Mine read as thin wire hoops lost in the mass;
+the source's are chunky, pale and visually dominant. The error was mine twice
+over: I called them "beech/birch" from the look of one backlit photograph in
+warm light, and never measured either quantity.
+
 ## A suspected further binding, now REFUTED
 
 I thought `evidence/q_fringe_head.jpg` might show a cord **wrapped or coiled

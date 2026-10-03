@@ -59,6 +59,15 @@ some passages than others in `evidence/q_ring_meet.jpg`. Source-derived in kind;
 the specific numbers (0.45 spread, runs of ~28) are fitted to look right, not
 measured.
 
+## Added: sprawl
+`sprawl` is the probability that a stitch ignores the pull toward existing
+fabric and takes the first free site. At 0 the work accretes into a mass, which
+is what the source is; at 1 it travels and makes a rope. **Not source-derived**
+— the source sits at 0 — but it is a dial on an existing rule (L8's "the act
+happens at the edge of the work") rather than a new rule, and it is what lets
+the same amount of work make something metres long. 800 stitches at 8 mm cord:
+21 cm at sprawl 0, 345 cm at sprawl 1.
+
 ## Chosen by me — the photographs do not determine these
 
 `target_policy`, `join_rate`, `window`, `ladder_period`, `nearest_radius` — L3

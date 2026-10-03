@@ -1352,3 +1352,51 @@ already rotates). Pinch zooms throughout.
 The first pulling trial reported `pieceMoved: 0` — I had fired all the
 pointermoves synchronously, so no frame ran between them and the solver never
 stepped. With 30 ms between moves it reads 1.402.
+
+
+---
+
+# Thirty-first round — the rings, and making pieces much bigger
+
+## The rings were wrong, measured two ways
+Asked what happened to the large white rings in the source. They were in the
+model all along, but rendered as mid-tan thin hoops. Measured off photo 2:
+
+    ring colour         RGB (190,169,134)   cream cord (142,136,128)
+    -> the rings are BRIGHTER than the cord; I had them darker and browner
+    outer / cord         8.7   (model had 10.7)
+    tube  / cord         2.4   (model had 1.5)
+
+Corrected to `ring_radius` 0.315, `ring_tube` 0.12, wood `(0.98, 0.88, 0.71)`.
+The net effect is a ring slightly smaller across but 2.6x thicker in section,
+and pale rather than brown — which is why the source's rings dominate and mine
+disappeared.
+
+## How a piece gets much bigger: three routes, measured
+**Gauge — linear and free.** 800 stitches: 8 mm cord gives 22 cm, 20 mm gives
+55 cm, 40 mm gives 110 cm, 80 mm gives **220 cm**. Same build time.
+
+**More work — cube root and expensive.** 500 stitches 15.8 cm (0.3 s), 1,500
+24.0 cm (1.0 s), 4,500 35.2 cm (7.6 s). Nine times the work buys 2.2x the size.
+
+**Sprawl — the big one.** I expected the L3 join policy to control this.
+**Measured, it does not**: chain, ladder, window and random all land at 20-24 cm.
+What controls it is whether the act must happen against existing fabric. But
+`contact` turned out to be effectively binary — 0 sprawls, anything above 0.3
+compacts — so a radius is the wrong control. Added `sprawl`, the probability of
+ignoring the pull toward the fabric:
+
+| sprawl | longest dimension, 800 stitches, 8 mm |
+|---|---|
+| 0.00 | 21 cm |
+| 0.15 | 79 cm |
+| 0.35 | 111 cm |
+| 0.60 | 198 cm |
+| 1.00 | 345 cm |
+
+A 16x range in extent from identical work. The JS port gives 24-311 cm over the
+same range: same family, different random stream, as expected.
+
+Worth stating plainly: at 80 mm the model says 2.2 m, but nothing here knows
+that 80 mm rope is extremely heavy. Gravity is a nudge and no part of this
+simulates a structure collapsing under its own weight.
